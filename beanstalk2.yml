@@ -1,0 +1,119 @@
+Parameters:
+  ApplicationPrefix:
+    Type: String
+  VPCId:
+    Type: AWS::EC2::VPC::Id
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet::Id
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet::Id
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet::Id
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet::Id
+  
+Resources:
+  NodejsEnvironmentRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/AWSElasticBeanstalkWebTier
+  NodejsEnvironmentInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref NodejsEnvironmentRole
+  NodejsApplication:
+    Type: AWS::ElasticBeanstalk::Application
+    Properties:
+      Description: AWS Elastic Beanstalk Nodejs Application
+      ApplicationName:
+        Fn::Join:
+          - "-"
+          - - !Ref ApplicationPrefix
+            - Application
+  NodejsApplicationVersion:
+    Type: AWS::ElasticBeanstalk::ApplicationVersion
+    Properties:
+      ApplicationName:
+        Ref: NodejsApplication
+      Description: AWS ElasticBeanstalk Nodejs Application Version
+      SourceBundle:
+        S3Bucket: !Sub "elasticbeanstalk-samples-${AWS::Region}"
+        S3Key: nodejs-sample.zip
+  NodejsConfigurationTemplate:
+    Type: AWS::ElasticBeanstalk::ConfigurationTemplate
+    Properties:
+      ApplicationName:
+        Ref: NodejsApplication
+      Description: AWS ElasticBeanstalk Nodejs Configuration Template
+      OptionSettings:
+      - Namespace: aws:autoscaling:asg
+        OptionName: MinSize
+        Value: '2'
+      - Namespace: aws:autoscaling:asg
+        OptionName: MinSize
+        Value: '2'
+      - Namespace: aws:autoscaling:launchconfiguration
+        OptionName: IamInstanceProfile
+        Value: !Ref NodejsEnvironmentInstanceProfile
+      - Namespace: aws:elasticbeanstalk:environment
+        OptionName: EnvironmentType
+        Value: LoadBalanced
+      - Namespace: aws:ec2:vpc
+        OptionName: VPCId
+        Value: !Ref VPCId
+      - Namespace: aws:ec2:vpc
+        OptionName: Subnets
+        Value:
+          Fn::Join:
+            - ","
+            - - !Ref PrivateSubnet1
+              - !Ref PrivateSubnet2
+      - Namespace: aws:ec2:vpc
+        OptionName: ELBSubnets
+        Value:
+          Fn::Join:
+            - ","
+            - - !Ref PublicSubnet1
+              - !Ref PublicSubnet2
+      SolutionStackName: 64bit Amazon Linux 2 v3.1.2 running PHP 7.3
+  NodejsEnvironment:
+    Type: AWS::ElasticBeanstalk::Environment
+    Properties:
+      ApplicationName:
+        Ref: NodejsApplication
+      Description: AWS ElasticBeanstalk Nodejs Environment
+      EnvironmentName: 
+        Fn::Join:
+          - "-"
+          - - !Ref ApplicationPrefix
+            - Environment
+      TemplateName:
+        Ref: NodejsConfigurationTemplate
+      VersionLabel:
+        Ref: NodejsApplicationVersion
+
+Outputs:
+  EnvironmentName:
+    Value: !Ref NodejsEnvironment
+  URL:
+    Description: URL of the AWS Elastic Beanstalk Environment
+    Value:
+      Fn::Join:
+        - ''
+        - - http://
+          - Fn::GetAtt:
+              - NodejsEnvironment
+              - EndpointURL
