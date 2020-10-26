@@ -1,0 +1,151 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: MySQL RDS 
+Parameters:
+  
+  VPC:
+    Description: Select VPC.
+    Type: AWS::EC2::VPC::Id
+  PrivateSubnet1:
+    Description: Private Subnet 1 to Allow Routing.
+    Type: AWS::EC2::Subnet::Id
+  PrivateSubnet2:
+    Description: Private Subnet 2 to Allow Routing.
+    Type: AWS::EC2::Subnet::Id
+
+Mappings:
+  Settings:
+    MySQL:
+      Engine: MySQL
+      Version: '5.7'
+
+Resources:
+  RDSAccessSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Instance to RDS Access
+      VpcId:
+        Ref: VPC
+      Tags:
+      - Key: Name
+        Value:
+          Fn::Join:
+          - ''
+          - - Ref: AWS::StackName
+            - "-rds"
+      
+  AccessSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    DependsOn: RDSAccessSecurityGroup
+    Properties:
+      GroupId:
+        Ref: RDSAccessSecurityGroup
+      IpProtocol: tcp
+      FromPort: '3306'
+        
+      ToPort: '3306'
+     
+      SourceSecurityGroupId:
+        Ref: RDSAccessSecurityGroup
+  DbSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription:
+        Fn::Join:
+        - ''
+        - - 'RDS Subnet Group for '
+          - Ref: AWS::StackName
+      SubnetIds:
+      - Ref: PrivateSubnet1
+      - Ref: PrivateSubnet2
+      
+      
+  DbInstance:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    DependsOn:
+    - DbSubnetGroup
+    - RDSAccessSecurityGroup
+    Properties:
+      AllocatedStorage: '5'
+        
+      AllowMajorVersionUpgrade: 'false'
+      AutoMinorVersionUpgrade: 'true'
+        
+      BackupRetentionPeriod: '7'
+        
+      DBInstanceClass: 'db.t2.micro'
+        
+      DBInstanceIdentifier:
+        Ref: AWS::StackName
+      DBSubnetGroupName:
+        Ref: DbSubnetGroup
+      Engine:
+        Fn::FindInMap:
+        - Settings
+        - MySQL
+        - Engine
+      EngineVersion:
+        Fn::FindInMap:
+        - Settings
+        - MySQL
+        - Version
+      MasterUsername: 'rdsroot'
+        
+      MasterUserPassword: 'testing123!'
+        
+      MultiAZ: 'true'
+        
+      Port: '3306'
+        
+      PreferredBackupWindow: '17:00-19:00'
+        
+      PreferredMaintenanceWindow: 'Sun:19:00-Sun:23:00'
+        
+      PubliclyAccessible: 'false'
+      StorageEncrypted: 'false'
+      StorageType: gp2
+      VPCSecurityGroups:
+      - Ref: RDSAccessSecurityGroup
+      Tags:
+      - Key: Name
+        Value:
+          Ref: AWS::StackName
+      
+  
+Outputs:
+  
+  VPC:
+    Description: VPC Used
+    Value:
+      Ref: VPC
+  
+  RDSPort:
+    Description: RDS Port
+    Value:
+      Fn::GetAtt:
+      - DbInstance
+      - Endpoint.Port
+  DbSubnetGroup:
+    Description: DB Subnet Group Created.
+    Value:
+      Ref: DbSubnetGroup
+  RDSAccessSecurityGroup:
+    Description: RDS Access Security Group Created.
+    Value:
+      Ref: RDSAccessSecurityGroup
+  
+  
+  PrivateSubnet1:
+    Description: Private Subnet 1 Deployment
+    Value:
+      Ref: PrivateSubnet1
+  PrivateSubnet2:
+    Description: Private Subnet 2 Deployment
+    Value:
+      Ref: PrivateSubnet2
+
+  
+  
+
+    
