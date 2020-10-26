@@ -1,0 +1,35 @@
+Parameters:
+  ApplicationPrefix:
+    Type: String
+
+Resources:
+  Networking:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://sample-testing-bucket-kpmg.s3.amazonaws.com/vpc.yml
+
+  Application:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://sample-testing-bucket-kpmg.s3.amazonaws.com/beanstalk2.yml
+      Parameters:
+        ApplicationPrefix: !Ref ApplicationPrefix
+        VPCId: !GetAtt Networking.Outputs.VPCId
+        PrivateSubnet1: !GetAtt Networking.Outputs.PrivateSubnet1Id
+        PrivateSubnet2: !GetAtt Networking.Outputs.PrivateSubnet2Id
+        PublicSubnet1: !GetAtt Networking.Outputs.PublicSubnet1Id
+        PublicSubnet2: !GetAtt Networking.Outputs.PublicSubnet1Id
+
+  Database:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://sample-testing-bucket-kpmg.s3.amazonaws.com/rds.yaml
+      Parameters:
+        
+        VPC: !GetAtt Networking.Outputs.VPCId
+        PrivateSubnet1: !GetAtt Networking.Outputs.PrivateSubnet1Id
+        PrivateSubnet2: !GetAtt Networking.Outputs.PrivateSubnet2Id
+Outputs:
+  URL: 
+    Description: URL of the AWS Elastic Beanstalk Environment
+    Value: !GetAtt Application.Outputs.URL
