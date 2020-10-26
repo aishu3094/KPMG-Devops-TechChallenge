@@ -1,6 +1,8 @@
 # KPMG-Devops-TechChallenge
 Solution to Tech Challenge for Cloud DevOps Engineer role at KPMG Bangalore
-Question 1
+
+
+ # Question 1
 
 I have built a very simple, bare bones solution as my version of a 3 tier architecture. I have used AWS CloudFormation as my IaC platform, Elastic Beanstalk as my automated application generator which provides a load balanced EC2 deployment of a sample Node JS application. I have attached a MySQL database to this architecture which stores any data taken in from the application. 
 Template Structure:
@@ -21,9 +23,9 @@ DynamoDb(NoSQL) Database can be used instead of RDS.
 The Nodejs application can be replaced by a PHP application to create a convention LAMP Stack. 
 
 
-Question 2
+# Question 2
 A simple AWS CLI Command to extract Metadata from the required Instance/Instances from the AWS Console. This code assumes that you already have configured credentials and region of the IAM user with respect to the account in question. 
 
 
-Question 3
+# Question 3
 A simple recursive python code that takes in the nested dictionary and keys as input and prints the value. 
